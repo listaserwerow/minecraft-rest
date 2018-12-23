@@ -1,0 +1,3 @@
+name: minecraft-rest
+version: 0.1 alpha
+main: pl.listaserwerow.minecraft.MinecraftRestPlugin
