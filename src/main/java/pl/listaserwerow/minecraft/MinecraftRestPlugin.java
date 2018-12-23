@@ -7,15 +7,27 @@ import pl.listaserwerow.minecraft.rest.PathHandlerProvider;
 public class MinecraftRestPlugin
         extends JavaPlugin
 {
+    private Undertow httpServer;
+
+    @Override
+    public void onDisable()
+    {
+        this.httpServer.stop();
+    }
+
     @Override
     public void onEnable()
     {
         PathHandlerProvider handlerProvider = new PathHandlerProvider();
-        Undertow server = Undertow.builder()
+
+        // @formatter:off
+        this.httpServer = Undertow.builder()
                                   .addHttpListener(8080, "0.0.0.0")
                                   .setHandler(handlerProvider.getHandler())
                                   .build();
-        server.start();
+        // @formatter:on
+
+        this.httpServer.start();
 
         System.out.println("after");
     }
