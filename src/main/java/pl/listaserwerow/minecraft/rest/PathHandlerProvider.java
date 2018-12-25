@@ -5,6 +5,8 @@ import io.undertow.Handlers;
 import io.undertow.server.HttpHandler;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
+import pl.listaserwerow.minecraft.rest.handler.ExecuteCommandPostHandler;
+import pl.listaserwerow.minecraft.rest.handler.PlayerOnlineGetHandler;
 import pl.listaserwerow.minecraft.rest.handler.StatusGetHandler;
 
 public class PathHandlerProvider
@@ -17,7 +19,9 @@ public class PathHandlerProvider
     {
         // @formatter:off
         return Handlers.routing()
-                .add(Methods.GET, "/status", new StatusGetHandler());
+                .add(Methods.GET, "/status", new StatusGetHandler())
+                .add(Methods.GET, "/player/{name}", new PlayerOnlineGetHandler())
+                .add(Methods.POST, "/execute/command", new ExecuteCommandPostHandler());
         // @formatter:on
     }
 }
