@@ -106,7 +106,7 @@ $signature = hash_hmac("sha256", json_encode($data), "defaulttoken");
 ```
 - przyklad generowania sygnatury w języku Java:
 ```java
-String signature = createSignature("defaulttoken", "[1, 2, 3]");
+String signature = createSignature("defaulttoken", "{\"commands\":[\"1\",\"2\",\"3\"]}");
 
 public static String createSignature(String token, String message)
             throws java.security.InvalidKeyException, NoSuchAlgorithmException
