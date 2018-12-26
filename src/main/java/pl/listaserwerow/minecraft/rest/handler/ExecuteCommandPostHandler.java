@@ -1,5 +1,6 @@
 package pl.listaserwerow.minecraft.rest.handler;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.undertow.server.HttpServerExchange;
 import org.bukkit.Bukkit;
@@ -16,6 +17,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ExecuteCommandPostHandler
         extends JsonBodyHandler
@@ -56,19 +59,62 @@ public class ExecuteCommandPostHandler
             return;
         }
 
-        Map<String, ExecuteCommandReturnModel> commands = new LinkedHashMap<>();
-        for (String command : data.getCommands())
+        exchange.dispatch(() ->
         {
-            PluginCommandSender commandSender = new PluginCommandSender();
-            boolean execute = Bukkit.dispatchCommand(commandSender, command);
+            ReentrantLock reentrantLock = new ReentrantLock();
+            Condition condition = reentrantLock.newCondition();
 
-            ExecuteCommandReturnModel commandReturnModel = new ExecuteCommandReturnModel();
-            commandReturnModel.setExecute(execute);
-            commandReturnModel.getMessages().addAll(commandSender.getReturnMessages());
+            reentrantLock.lock();
+            try
+            {
+                Map<String, ExecuteCommandReturnModel> commands = new LinkedHashMap<>();
+                Bukkit.getScheduler().runTask(MinecraftRest.getPlugin(), () ->
+                {
+                    for (String command : data.getCommands())
+                    {
+                        PluginCommandSender commandSender = new PluginCommandSender();
+                        boolean execute = Bukkit.dispatchCommand(commandSender, command);
 
-            commands.put(command, commandReturnModel);
-        }
-        exchange.getResponseSender().send(MinecraftRest.objectMapper().writeValueAsString(commands));
+                        ExecuteCommandReturnModel commandReturnModel = new ExecuteCommandReturnModel();
+                        commandReturnModel.setExecute(execute);
+                        commandReturnModel.getMessages().addAll(commandSender.getReturnMessages());
+
+                        commands.put(command, commandReturnModel);
+                    }
+                    reentrantLock.lock();
+                    try
+                    {
+                        condition.signal();
+                    }
+                    finally
+                    {
+                        reentrantLock.unlock();
+                    }
+                });
+
+                try
+                {
+                    condition.await();
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+
+                try
+                {
+                    exchange.getResponseSender().send(MinecraftRest.objectMapper().writeValueAsString(commands));
+                }
+                catch (JsonProcessingException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+            finally
+            {
+                reentrantLock.unlock();
+            }
+        });
     }
 
     public static String createSignature(String token, String message)

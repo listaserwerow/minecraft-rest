@@ -28,6 +28,8 @@ public class MinecraftRestPlugin
     @Override
     public void onEnable()
     {
+        MinecraftRest.setPlugin(this);
+
         PathHandlerProvider handlerProvider = new PathHandlerProvider();
 
         // @formatter:off
@@ -89,7 +91,8 @@ public class MinecraftRestPlugin
         FileConfiguration config = this.getConfig();
 
         List<Map<String, Object>> tokens = new ArrayList<>();
-        MinecraftRest.getTokens().forEach((name, token) -> {
+        MinecraftRest.getTokens().forEach((name, token) ->
+        {
             Map<String, Object> tokenMap = new HashMap<>();
             tokenMap.put("name", token.getName());
             tokenMap.put("token", token.getToken());
